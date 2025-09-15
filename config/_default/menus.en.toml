@@ -1,0 +1,17 @@
+############# English navigation ##############
+
+# main menu
+[[main]]
+name = "Accueil"
+url = "/"
+weight = 1
+
+[[main]]
+name = "Planning"
+url = "/planning"
+weight = 2
+
+[[main]]
+name = "Week-end EVTT 2025 / 20&21 septembre"
+url = "/week"
+weight = 2

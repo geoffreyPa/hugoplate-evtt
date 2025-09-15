@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Connexion Supabase - École VTT</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 2rem auto; 
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+        .test-container { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-result { 
+            margin: 1rem 0; 
+            padding: 1rem; 
+            border-radius: 4px; 
+            border: 1px solid #ddd;
+        }
+        .success { background: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 0.5rem 1rem; 
+            border-radius: 4px; 
+            cursor: pointer;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+        button:hover { background: #0056b3; }
+        pre { 
+            background: #f8f9fa; 
+            padding: 1rem; 
+            border-radius: 4px; 
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+        .status { font-weight: bold; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test de Connexion Supabase - École VTT</h1>
+        
+        <div class="status" id="status">Prêt pour les tests...</div>
+        
+        <div>
+            <button onclick="testConnection()">🔌 Tester la connexion</button>
+            <button onclick="testTables()">📊 Tester les tables</button>
+            <button onclick="testPlanningData()">📅 Tester les données planning</button>
+            <button onclick="testComplexQuery()">🔍 Tester requête complète</button>
+            <button onclick="clearResults()">🧹 Effacer</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Configuration Supabase
+        const SUPABASE_URL = 'https://mrxqmhzpcrkbfgdlisah.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yeHFtaHpwY3JrYmZnZGxpc2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NDcxMjMsImV4cCI6MjA2OTAyMzEyM30.KOYe2BK_G8kVPV1IyEcTfbGz-nOSmh3pZb8bI57ouBw';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function addResult(title, content, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<h3>${title}</h3>${content}`;
+            results.appendChild(div);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            updateStatus('Résultats effacés...');
+        }
+        
+        async function testConnection() {
+            updateStatus('Test de connexion en cours...', 'info');
+            try {
+                const { data, error } = await supabase.from('vtt_planning').select('count', { count: 'exact', head: true });
+                
+                if (error) throw error;
+                
+                addResult('✅ Connexion Supabase', 
+                    `<p>Connexion réussie !</p>
+                     <p>URL: ${SUPABASE_URL}</p>
+                     <p>Nombre d'enregistrements planning: ${data || 'N/A'}</p>`, 'success');
+                updateStatus('Connexion réussie !', 'success');
+            } catch (error) {
+                addResult('❌ Erreur de connexion', 
+                    `<p>Impossible de se connecter à Supabase</p>
+                     <pre>${error.message}</pre>`, 'error');
+                updateStatus('Erreur de connexion', 'error');
+            }
+        }
+        
+        async function testTables() {
+            updateStatus('Test des tables en cours...', 'info');
+            const tables = ['vtt_planning', 'vtt_locations', 'vtt_themes', 'vtt_groups', 'monitors'];
+            let results = '<ul>';
+            
+            for (const table of tables) {
+                try {
+                    const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
+                    if (error) throw error;
+                    results += `<li>✅ ${table}: ${count} enregistrements</li>`;
+                } catch (error) {
+                    results += `<li>❌ ${table}: ${error.message}</li>`;
+                }
+            }
+            
+            results += '</ul>';
+            addResult('📊 État des tables', results, 'info');
+            updateStatus('Test des tables terminé');
+        }
+        
+        async function testPlanningData() {
+            updateStatus('Test des données planning...', 'info');
+            try {
+                const { data, error } = await supabase
+                    .from('vtt_planning')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                let content = `<p>Données récupérées: ${data.length} sessions</p>`;
+                if (data.length > 0) {
+                    content += '<h4>Exemple de données:</h4><pre>' + JSON.stringify(data[0], null, 2) + '</pre>';
+                } else {
+                    content += '<p>⚠️ Aucune donnée trouvée. Exécutez le script sample_data.sql pour ajouter des données de test.</p>';
+                }
+                
+                addResult('📅 Données Planning', content, data.length > 0 ? 'success' : 'error');
+                updateStatus(`${data.length} sessions trouvées`);
+            } catch (error) {
+                addResult('❌ Erreur données planning', 
+                    `<pre>${error.message}</pre>`, 'error');
+                updateStatus('Erreur lors de la récupération des données', 'error');
+            }
+        }
+        
+        async function testComplexQuery() {
+            updateStatus('Test de la requête complète...', 'info');
+            try {
+                const { data, error } = await supabase
+                    .from('vtt_planning')
+                    .select(`
+                        *,
+                        vtt_locations:location_id(*),
+                        vtt_themes:theme_id(*),
+                        vtt_planning_groups(
+                            vtt_groups(*)
+                        ),
+                        vtt_planning_monitors(
+                            monitors(*)
+                        )
+                    `)
+                    .eq('is_cancelled', false)
+                    .limit(3);
+                
+                if (error) throw error;
+                
+                let content = `<p>Requête complexe réussie: ${data.length} sessions avec relations</p>`;
+                if (data.length > 0) {
+                    const session = data[0];
+                    content += `
+                        <h4>Exemple de session complète:</h4>
+                        <ul>
+                            <li><strong>Date:</strong> ${session.session_date}</li>
+                            <li><strong>Horaire:</strong> ${session.start_time} - ${session.end_time}</li>
+                            <li><strong>Lieu:</strong> ${session.vtt_locations?.name || 'N/A'}</li>
+                            <li><strong>Thème:</strong> ${session.vtt_themes?.name || 'N/A'}</li>
+                            <li><strong>Groupes:</strong> ${session.vtt_planning_groups?.map(pg => pg.vtt_groups?.name).filter(Boolean).join(', ') || 'Aucun'}</li>
+                            <li><strong>Moniteurs:</strong> ${session.vtt_planning_monitors?.map(pm => pm.monitors?.name).filter(Boolean).join(', ') || 'Aucun'}</li>
+                        </ul>
+                    `;
+                } else {
+                    content += '<p>⚠️ Aucune session active trouvée.</p>';
+                }
+                
+                addResult('🔍 Requête Complète', content, data.length > 0 ? 'success' : 'error');
+                updateStatus('Requête complète terminée');
+            } catch (error) {
+                addResult('❌ Erreur requête complète', 
+                    `<p>La requête avec relations a échoué:</p>
+                     <pre>${error.message}</pre>
+                     <p>Vérifiez que toutes les tables et relations existent.</p>`, 'error');
+                updateStatus('Erreur lors de la requête complète', 'error');
+            }
+        }
+        
+        // Test automatique au chargement
+        window.addEventListener('load', () => {
+            updateStatus('Page chargée, prêt pour les tests');
+        });
+    </script>
+</body>
+</html>
