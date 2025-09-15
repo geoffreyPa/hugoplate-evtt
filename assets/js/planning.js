@@ -138,10 +138,18 @@ class PlanningVTT {
   generateEventTitle(planningItem, groups, monitors) {
     let title = '';
     
-    // Thème ou session spéciale (commencer directement par ça, sans l'heure)
+    // Groupes (afficher en premier)
+    if (groups.length > 0) {
+      const groupNames = groups.map(g => g.name).join(', ');
+      title += `👥 ${groupNames}`;
+    }
+    
+    // Thème ou session spéciale
     if (planningItem.is_special_session) {
+      if (title) title += ' • ';
       title += '⭐ Session spéciale';
     } else if (planningItem.vtt_themes?.name) {
+      if (title) title += ' • ';
       title += `${planningItem.vtt_themes.name}`;
     }
     
