@@ -51,5 +51,5 @@ features:
     button:
       enable: true
       label: "Nous contacter"
-      link: "https://www.naturavelo.com/inscription-ecole-vtt-28"
+      link: "mailto:sebastien@naturavelo.com"
 ---
