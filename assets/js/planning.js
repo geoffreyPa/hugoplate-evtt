@@ -138,27 +138,31 @@ class PlanningVTT {
   generateEventTitle(planningItem, groups, monitors) {
     let title = '';
     
-    // Heure
-    const startTime = planningItem.start_time.substring(0, 5); // HH:MM
-    const endTime = planningItem.end_time.substring(0, 5); // HH:MM
-    title += `${startTime}-${endTime}`;
-    
-    // Thème ou session spéciale
+    // Thème ou session spéciale (commencer directement par ça, sans l'heure)
     if (planningItem.is_special_session) {
-      title += ' • ⭐ Session spéciale';
+      title += '⭐ Session spéciale';
     } else if (planningItem.vtt_themes?.name) {
-      title += ` • ${planningItem.vtt_themes.name}`;
+      title += `${planningItem.vtt_themes.name}`;
     }
     
     // Lieu
     if (planningItem.vtt_locations?.name) {
-      title += ` • 📍 ${planningItem.vtt_locations.name}`;
+      if (title) title += ' • ';
+      title += `📍 ${planningItem.vtt_locations.name}`;
     }
     
-    // Moniteurs
+    // Moniteurs avec téléphone
     if (monitors.length > 0) {
-      const monitorNames = monitors.map(m => m.name).join(', ');
-      title += ` • 👨‍🏫 ${monitorNames}`;
+      if (title) title += ' • ';
+      const monitorInfo = monitors.map(m => {
+        let info = `👨‍🏫 ${m.name}`;
+        // Ajouter le téléphone si disponible
+        if (m.tel) {
+          info += ` (📞 ${m.tel})`;
+        }
+        return info;
+      }).join(', ');
+      title += monitorInfo;
     }
     
     return title;
