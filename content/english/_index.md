@@ -3,7 +3,7 @@
 banner:
   title: "École VTT - Apprenez le VTT dans la joie et la sécurité"
   content: "De la draisienne aux premières descentes, nous accompagnons vos enfants dans la découverte du VTT avec des méthodes adaptées à chaque âge et niveau."
-  image: "/images/banner.png"
+  image: "/images/Weekend-EVTT-08845.jpg"
   button:
     enable: true
     label: "S'inscrire maintenant"
