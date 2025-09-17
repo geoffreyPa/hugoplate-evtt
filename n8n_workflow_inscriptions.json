@@ -1,0 +1,187 @@
+{
+  "name": "Week-end VTT - Gestion Inscriptions",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "inscri-week-evtt",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Inscription",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "inscri-week-evtt"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "inscription_id",
+              "value": "={{ $json.query.inscription_id }}"
+            },
+            {
+              "name": "nom",
+              "value": "={{ $json.query.nom }}"
+            },
+            {
+              "name": "prenom",
+              "value": "={{ $json.query.prenom }}"
+            },
+            {
+              "name": "email",
+              "value": "={{ $json.query.email }}"
+            },
+            {
+              "name": "telephone",
+              "value": "={{ $json.query.telephone }}"
+            },
+            {
+              "name": "nombre_personnes",
+              "value": "={{ $json.query.nombre_personnes }}"
+            },
+            {
+              "name": "prix_total",
+              "value": "={{ $json.query.prix_total }}"
+            },
+            {
+              "name": "evenement",
+              "value": "={{ $json.query.evenement }}"
+            },
+            {
+              "name": "date_inscription",
+              "value": "={{ $json.query.date_inscription }}"
+            },
+            {
+              "name": "statut",
+              "value": "={{ $json.query.statut }}"
+            },
+            {
+              "name": "participants_json",
+              "value": "={{ $json.query.participants }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-data",
+      "name": "Extraire Données",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser les participants et créer un récap\nconst participants = JSON.parse($input.first().json.participants_json);\nconst inscriptionData = $input.first().json;\n\n// Formatage de la date\nconst dateInscription = new Date(inscriptionData.date_inscription);\nconst dateFormatee = dateInscription.toLocaleDateString('fr-FR', {\n  day: '2-digit',\n  month: '2-digit', \n  year: 'numeric',\n  hour: '2-digit',\n  minute: '2-digit'\n});\n\n// Créer la liste des participants formatée\nlet listeParticipants = '';\nparticipants.forEach((participant, index) => {\n  const dateNaissance = new Date(participant.date_naissance);\n  const age = new Date().getFullYear() - dateNaissance.getFullYear();\n  listeParticipants += `${index + 1}. ${participant.prenom} ${participant.nom} (${age} ans)\\n`;\n});\n\n// Email de confirmation pour l'utilisateur\nconst emailConfirmation = {\n  to: inscriptionData.email,\n  subject: `✅ Confirmation d'inscription - Week-end VTT EVTT`,\n  html: `\n    <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;\">\n      <div style=\"background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);\">\n        \n        <!-- Header -->\n        <div style=\"text-align: center; margin-bottom: 30px;\">\n          <h1 style=\"color: #21A095; margin: 0; font-size: 28px;\">🚴‍♂️ Week-end VTT EVTT</h1>\n          <h2 style=\"color: #333; margin: 10px 0 0 0; font-size: 22px;\">Confirmation d'inscription</h2>\n        </div>\n        \n        <!-- Message principal -->\n        <div style=\"background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin-bottom: 25px;\">\n          <p style=\"color: #155724; margin: 0; font-size: 16px; font-weight: bold;\">✅ Votre inscription a été reçue avec succès !</p>\n          <p style=\"color: #155724; margin: 10px 0 0 0; font-size: 14px;\">Nous traiterons votre demande dans les plus brefs délais.</p>\n        </div>\n        \n        <!-- Récapitulatif -->\n        <h3 style=\"color: #333; border-bottom: 2px solid #21A095; padding-bottom: 5px;\">📋 Récapitulatif de votre inscription</h3>\n        \n        <div style=\"background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;\">\n          <p><strong>👤 Contact principal :</strong> ${inscriptionData.prenom} ${inscriptionData.nom}</p>\n          <p><strong>📧 Email :</strong> ${inscriptionData.email}</p>\n          <p><strong>📞 Téléphone :</strong> ${inscriptionData.telephone}</p>\n          <p><strong>📅 Date d'inscription :</strong> ${dateFormatee}</p>\n          <p><strong>🎯 Événement :</strong> ${inscriptionData.evenement}</p>\n          <p><strong>👥 Nombre de participants :</strong> ${inscriptionData.nombre_personnes}</p>\n          <p><strong>💰 Prix total :</strong> ${inscriptionData.prix_total}€</p>\n          <p><strong>📊 Statut :</strong> <span style=\"background-color: #fff3cd; padding: 2px 8px; border-radius: 4px; color: #856404;\">En attente de confirmation</span></p>\n        </div>\n        \n        <!-- Liste des participants -->\n        <h3 style=\"color: #333; border-bottom: 2px solid #21A095; padding-bottom: 5px;\">👥 Liste des participants</h3>\n        \n        <div style=\"background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;\">\n          <pre style=\"margin: 0; font-family: Arial, sans-serif; white-space: pre-wrap; color: #333;\">${listeParticipants}</pre>\n        </div>\n        \n        <!-- Informations importantes -->\n        <div style=\"background-color: #cce5ff; border: 1px solid #99ccff; border-radius: 8px; padding: 20px; margin-bottom: 25px;\">\n          <h4 style=\"color: #004085; margin: 0 0 10px 0;\">ℹ️ Informations importantes</h4>\n          <ul style=\"color: #004085; margin: 0; padding-left: 20px;\">\n            <li>Nous vous contacterons sous 48h pour confirmer votre inscription</li>\n            <li>Le paiement sera demandé lors de la confirmation</li>\n            <li>En cas de questions, n'hésitez pas à nous contacter</li>\n            <li>Vérifiez vos spams si vous ne recevez pas de nouvelles</li>\n          </ul>\n        </div>\n        \n        <!-- Contact -->\n        <div style=\"text-align: center; border-top: 1px solid #ddd; padding-top: 20px; color: #666;\">\n          <p style=\"margin: 0;\"><strong>📞 Contact :</strong> geoffrey@naturavelo.com</p>\n          <p style=\"margin: 5px 0 0 0;\"><strong>🌐 Site web :</strong> www.naturavelo.com</p>\n          <p style=\"margin: 15px 0 0 0; font-size: 12px;\">Week-end VTT organisé par EVTT (École de VTT de Thorigny)</p>\n        </div>\n        \n      </div>\n    </div>\n  `\n};\n\n// Email de notification pour l'admin\nconst emailNotification = {\n  to: 'geoffrey@naturavelo.com',\n  subject: `🔔 Nouvelle inscription Week-end VTT - ${inscriptionData.prenom} ${inscriptionData.nom}`,\n  html: `\n    <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;\">\n      <div style=\"background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);\">\n        \n        <!-- Header -->\n        <div style=\"text-align: center; margin-bottom: 30px;\">\n          <h1 style=\"color: #dc3545; margin: 0; font-size: 28px;\">🔔 Nouvelle Inscription</h1>\n          <h2 style=\"color: #333; margin: 10px 0 0 0; font-size: 22px;\">Week-end VTT EVTT</h2>\n        </div>\n        \n        <!-- Alert -->\n        <div style=\"background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; padding: 20px; margin-bottom: 25px;\">\n          <p style=\"color: #721c24; margin: 0; font-size: 16px; font-weight: bold;\">⚡ Action requise : Nouvelle inscription à traiter</p>\n          <p style=\"color: #721c24; margin: 10px 0 0 0; font-size: 14px;\">Inscription reçue le ${dateFormatee}</p>\n        </div>\n        \n        <!-- Détails -->\n        <h3 style=\"color: #333; border-bottom: 2px solid #dc3545; padding-bottom: 5px;\">📋 Détails de l'inscription</h3>\n        \n        <div style=\"background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;\">\n          <p><strong>🆔 ID Inscription :</strong> #${inscriptionData.inscription_id}</p>\n          <p><strong>👤 Contact principal :</strong> ${inscriptionData.prenom} ${inscriptionData.nom}</p>\n          <p><strong>📧 Email :</strong> <a href=\"mailto:${inscriptionData.email}\" style=\"color: #21A095;\">${inscriptionData.email}</a></p>\n          <p><strong>📞 Téléphone :</strong> <a href=\"tel:${inscriptionData.telephone}\" style=\"color: #21A095;\">${inscriptionData.telephone}</a></p>\n          <p><strong>👥 Nombre de participants :</strong> ${inscriptionData.nombre_personnes}</p>\n          <p><strong>💰 Prix total :</strong> <strong style=\"color: #28a745;\">${inscriptionData.prix_total}€</strong></p>\n        </div>\n        \n        <!-- Participants -->\n        <h3 style=\"color: #333; border-bottom: 2px solid #dc3545; padding-bottom: 5px;\">👥 Liste des participants</h3>\n        \n        <div style=\"background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;\">\n          <pre style=\"margin: 0; font-family: Arial, sans-serif; white-space: pre-wrap; color: #333;\">${listeParticipants}</pre>\n        </div>\n        \n        <!-- Actions -->\n        <div style=\"background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin-bottom: 25px;\">\n          <h4 style=\"color: #856404; margin: 0 0 15px 0;\">🎯 Actions à effectuer</h4>\n          <div style=\"color: #856404;\">\n            <p style=\"margin: 0 0 10px 0;\">✅ <strong>Vérifier</strong> l'inscription dans l'interface admin</p>\n            <p style=\"margin: 0 0 10px 0;\">📞 <strong>Contacter</strong> le client pour confirmation</p>\n            <p style=\"margin: 0 0 10px 0;\">💳 <strong>Organiser</strong> le paiement</p>\n            <p style=\"margin: 0;\">✉️ <strong>Confirmer</strong> l'inscription par email</p>\n          </div>\n        </div>\n        \n        <!-- Liens utiles -->\n        <div style=\"text-align: center; border-top: 1px solid #ddd; padding-top: 20px;\">\n          <p style=\"margin: 0 0 10px 0;\"><strong>🔗 Liens utiles :</strong></p>\n          <p style=\"margin: 0;\">📊 <a href=\"https://votre-site.com/admin_inscriptions.html\" style=\"color: #21A095;\">Interface d'administration</a></p>\n        </div>\n        \n      </div>\n    </div>\n  `\n};\n\nreturn [\n  {\n    json: emailConfirmation,\n    pairedItem: { item: 0 }\n  },\n  {\n    json: emailNotification,\n    pairedItem: { item: 0 }\n  }\n];"
+      },
+      "id": "process-data",
+      "name": "Préparer Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@naturavelo.com",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "email-confirmation",
+      "name": "Email Confirmation Client",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@naturavelo.com",
+        "toEmail": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "email-notification",
+      "name": "Email Notification Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        800,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Inscription": {
+      "main": [
+        [
+          {
+            "node": "Extraire Données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire Données": {
+      "main": [
+        [
+          {
+            "node": "Préparer Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer Emails": {
+      "main": [
+        [
+          {
+            "node": "Email Confirmation Client",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Notification Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-15T10:00:00.000Z",
+      "updatedAt": "2025-01-15T10:00:00.000Z",
+      "id": "week-end-vtt",
+      "name": "Week-end VTT"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

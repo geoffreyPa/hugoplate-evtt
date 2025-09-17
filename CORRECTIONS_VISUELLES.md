@@ -149,3 +149,4 @@ Pour voir les changements :
 
 **🎉 Le planning est maintenant visuellement parfait avec des filtres ultra-distincts et des couleurs spécifiques par groupe !**
 
+

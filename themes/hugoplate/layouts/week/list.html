@@ -566,6 +566,51 @@
         
         // Variables globales
         const pricePerPerson = {{ .price_per_person }};
+        const webhookUrl = 'https://automate.naturavelo.net/webhook/inscri-week-evtt';
+        
+        // Fonction pour envoyer les données au webhook
+        async function sendToWebhook(inscriptionData, participantsData, inscriptionId) {
+          try {
+            // Préparer les paramètres pour l'URL
+            const params = new URLSearchParams();
+            
+            // Données principales de l'inscription
+            params.append('inscription_id', inscriptionId);
+            params.append('nom', inscriptionData.nom);
+            params.append('prenom', inscriptionData.prenom);
+            params.append('email', inscriptionData.email);
+            params.append('telephone', inscriptionData.telephone);
+            params.append('nombre_personnes', inscriptionData.nombre_personnes);
+            params.append('prix_total', inscriptionData.prix_total);
+            params.append('evenement', inscriptionData.evenement);
+            params.append('date_inscription', inscriptionData.date_inscription);
+            params.append('statut', inscriptionData.statut);
+            
+            // Ajouter les participants (format JSON stringifié)
+            params.append('participants', JSON.stringify(participantsData));
+            
+            // Construire l'URL complète
+            const fullUrl = `${webhookUrl}?${params.toString()}`;
+            
+            // Envoyer la requête GET
+            const response = await fetch(fullUrl, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+            
+            if (!response.ok) {
+              console.warn('Webhook response not OK:', response.status, response.statusText);
+            } else {
+              console.log('Webhook envoyé avec succès');
+            }
+            
+          } catch (error) {
+            // Ne pas faire échouer l'inscription si le webhook échoue
+            console.warn('Erreur lors de l\'envoi vers le webhook (non-bloquant):', error);
+          }
+        }
         
         // Scroll fluide pour les liens d'ancrage
         document.addEventListener('DOMContentLoaded', function() {
@@ -822,6 +867,9 @@
                   .eq('id', inscriptionId);
                 throw participantsError;
               }
+              
+              // Envoyer les données au webhook (non-bloquant)
+              await sendToWebhook(inscriptionData, participantsData, inscriptionId);
               
               // Afficher le message de succès
               formMessage.className = 'mt-6 p-4 rounded-2xl text-center font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
