@@ -144,12 +144,12 @@ inscription_form:
       required: true
       placeholder: "06 12 34 56 78"
     - name: "nombre_personnes"
-      label: "Nombre de personnes (7 ans et plus)"
+      label: "Nombre TOTAL de participants (vous inclus)"
       type: "number"
       required: true
       min: 1
       max: 10
-      placeholder: "1"
+      placeholder: "Exemple: 2 si vous venez avec 1 autre personne"
   submit_button:
     label: "Réserver maintenant"
     processing_label: "Envoi en cours..."

@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - Inscriptions Week-end VTT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl no-print">
+        <div class="container mx-auto px-6 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold flex items-center">
+                        <i class="fas fa-biking text-4xl mr-4"></i>
+                        Administration - Week-end VTT
+                    </h1>
+                    <p class="text-blue-100 mt-2">Gestion des inscriptions et liste des participants</p>
+                </div>
+                <div class="flex gap-4">
+                    <button id="refresh-btn" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualiser
+                    </button>
+                    <button id="print-btn" class="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                        <i class="fas fa-print"></i>
+                        Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Loading -->
+    <div id="loading" class="flex items-center justify-center py-20">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-600 text-lg">Chargement des inscriptions...</p>
+        </div>
+    </div>
+
+    <!-- Content Container -->
+    <div id="content" class="container mx-auto px-6 py-8 hidden">
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 no-print">
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="flex items-center">
+                    <div class="text-blue-500 text-2xl">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Inscriptions</p>
+                        <p id="total-inscriptions" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+                <div class="flex items-center">
+                    <div class="text-green-500 text-2xl">
+                        <i class="fas fa-user-friends"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Participants</p>
+                        <p id="total-participants" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500">
+                <div class="flex items-center">
+                    <div class="text-yellow-500 text-2xl">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">En Attente</p>
+                        <p id="pending-inscriptions" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="text-purple-500 text-2xl">
+                        <i class="fas fa-euro-sign"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Revenus Prévus</p>
+                        <p id="total-revenue" class="text-2xl font-bold text-gray-900">0€</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 no-print">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Filtres</h2>
+            <div class="flex flex-wrap gap-4">
+                <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="all">Tous les statuts</option>
+                    <option value="en_attente">En attente</option>
+                    <option value="confirmee">Confirmée</option>
+                    <option value="annulee">Annulée</option>
+                </select>
+                
+                <input type="text" id="search-filter" placeholder="Rechercher nom, prénom, email..." 
+                       class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-grow max-w-md">
+                
+                <button id="export-excel" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2">
+                    <i class="fas fa-file-excel"></i>
+                    Export Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Inscriptions List -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                    <i class="fas fa-list-alt mr-3 text-blue-600"></i>
+                    Liste des Inscriptions
+                </h2>
+            </div>
+            
+            <div id="inscriptions-container" class="divide-y divide-gray-200">
+                <!-- Les inscriptions seront affichées ici -->
+            </div>
+        </div>
+
+        <!-- Liste complète des participants pour impression -->
+        <div id="participants-print-list" class="hidden print:block">
+            <div class="print-break">
+                <h1 class="text-3xl font-bold text-center mb-8">
+                    Week-end VTT - 20-21 septembre 2025<br>
+                    <span class="text-2xl text-gray-600">Liste des Participants</span>
+                </h1>
+                <div id="participants-print-content">
+                    <!-- Contenu généré pour l'impression -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-message" class="hidden container mx-auto px-6 py-8">
+        <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+            <i class="fas fa-exclamation-triangle text-red-500 text-3xl mb-4"></i>
+            <h2 class="text-xl font-bold text-red-800 mb-2">Erreur de chargement</h2>
+            <p id="error-text" class="text-red-600"></p>
+            <button id="retry-btn" class="mt-4 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200">
+                Réessayer
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal d'annulation de participant ADMIN -->
+    <div id="modal-annulation-participant-admin" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Annuler un participant</h3>
+                    <p id="participant-a-annuler-admin" class="text-gray-600"></p>
+                </div>
+
+                <form id="form-annulation-participant-admin" class="space-y-4">
+                    <div>
+                        <label for="motif-annulation-participant-admin" class="block text-sm font-bold text-gray-700 mb-2">
+                            Motif d'annulation
+                        </label>
+                        <textarea
+                            id="motif-annulation-participant-admin"
+                            name="motif"
+                            rows="3"
+                            placeholder="Raison de l'annulation (maladie, empêchement, etc.)"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        ></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="fermerModalAnnulationParticipantAdmin()" 
+                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            Annuler
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium">
+                            Confirmer l'annulation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmation de réactivation ADMIN -->
+    <div id="modal-reactivation-participant-admin" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="text-center mb-6">
+                    <i class="fas fa-undo text-4xl text-green-500 mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Réactiver un participant</h3>
+                    <p id="participant-a-reactiver-admin" class="text-gray-600"></p>
+                </div>
+
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <p class="text-green-800 text-sm">
+                        Ce participant sera réactivé et comptera de nouveau dans l'effectif et le prix total.
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button onclick="fermerModalReactivationParticipantAdmin()" 
+                            class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                        Annuler
+                    </button>
+                    <button onclick="confirmerReactivationParticipantAdmin()" 
+                            class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium">
+                        Réactiver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Supabase
+        const supabaseUrl = 'https://jiforbxelcpihbphrtzx.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZm9yYnhlbGNwaWhicGhydHp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2MzczMjEsImV4cCI6MjA2OTIxMzMyMX0.L1RMxREEi9txY-n31Bbrl4A9nWm2E_47WzaYdbrwVt8';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let allInscriptions = [];
+        let filteredInscriptions = [];
+        let participantEnCoursAnnulationAdmin = null;
+        let participantEnCoursReactivationAdmin = null;
+        let inscriptionEnCoursAdmin = null;
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInscriptions();
+            
+            // Event listeners
+            document.getElementById('refresh-btn').addEventListener('click', loadInscriptions);
+            document.getElementById('print-btn').addEventListener('click', printParticipantsList);
+            document.getElementById('retry-btn').addEventListener('click', loadInscriptions);
+            document.getElementById('status-filter').addEventListener('change', applyFilters);
+            document.getElementById('search-filter').addEventListener('input', applyFilters);
+            document.getElementById('export-excel').addEventListener('click', exportToExcel);
+            document.getElementById('form-annulation-participant-admin').addEventListener('submit', confirmerAnnulationParticipantAdmin);
+        });
+
+        // Charger les inscriptions
+        async function loadInscriptions() {
+            try {
+                showLoading();
+                
+                // Récupérer les inscriptions avec leurs participants
+                const { data: inscriptions, error } = await supabase
+                    .from('v_inscriptions_completes')
+                    .select('*')
+                    .order('date_inscription', { ascending: false });
+
+                if (error) throw error;
+
+                allInscriptions = inscriptions || [];
+                updateStatistics();
+                applyFilters();
+                showContent();
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Impossible de charger les inscriptions: ' + error.message);
+            }
+        }
+
+        // Mettre à jour les statistiques
+        function updateStatistics() {
+            const totalInscriptions = allInscriptions.length;
+            let totalParticipantsInscrits = 0;
+            let totalParticipantsActifs = 0;
+            let totalParticipantsAnnules = 0;
+            let pendingInscriptions = 0;
+            let totalRevenue = 0;
+            let revenusAjustes = 0;
+
+            allInscriptions.forEach(inscription => {
+                const participants = inscription.participants || [];
+                const participantsActifs = participants.filter(p => !p.annule).length;
+                const participantsAnnules = participants.filter(p => p.annule).length;
+                
+                totalParticipantsInscrits += inscription.nombre_personnes;
+                totalParticipantsActifs += participantsActifs;
+                totalParticipantsAnnules += participantsAnnules;
+                totalRevenue += inscription.prix_total;
+                revenusAjustes += participantsActifs * 40; // 40€ par participant actif
+                
+                if (inscription.statut === 'en_attente') {
+                    pendingInscriptions++;
+                }
+            });
+
+            document.getElementById('total-inscriptions').textContent = totalInscriptions;
+            document.getElementById('total-participants').innerHTML = `
+                <div class="text-2xl font-bold text-gray-900">${totalParticipantsActifs}</div>
+                <div class="text-xs text-gray-500">
+                    ${totalParticipantsAnnules > 0 ? `${totalParticipantsAnnules} annulés` : 'Tous actifs'}
+                </div>
+            `;
+            document.getElementById('pending-inscriptions').textContent = pendingInscriptions;
+            document.getElementById('total-revenue').innerHTML = `
+                <div class="text-2xl font-bold text-gray-900">${revenusAjustes}€</div>
+                ${revenusAjustes !== totalRevenue ? `
+                    <div class="text-xs text-gray-500">
+                        (${totalRevenue}€ initial)
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Appliquer les filtres
+        function applyFilters() {
+            const statusFilter = document.getElementById('status-filter').value;
+            const searchFilter = document.getElementById('search-filter').value.toLowerCase();
+
+            filteredInscriptions = allInscriptions.filter(inscription => {
+                // Filtre par statut
+                if (statusFilter !== 'all' && inscription.statut !== statusFilter) {
+                    return false;
+                }
+
+                // Filtre de recherche
+                if (searchFilter) {
+                    const searchText = `${inscription.responsable_nom} ${inscription.responsable_prenom} ${inscription.email}`.toLowerCase();
+                    if (!searchText.includes(searchFilter)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            displayInscriptions();
+        }
+
+        // Afficher les inscriptions
+        function displayInscriptions() {
+            const container = document.getElementById('inscriptions-container');
+            
+            if (filteredInscriptions.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <i class="fas fa-search text-4xl mb-4"></i>
+                        <p class="text-lg">Aucune inscription trouvée</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredInscriptions.map(inscription => {
+                const participants = inscription.participants || [];
+                const statusColor = getStatusColor(inscription.statut);
+                
+                return `
+                    <div class="p-6 hover:bg-gray-50 transition-colors duration-200">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <!-- Informations principales -->
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-lg font-bold text-gray-900">
+                                        ${inscription.responsable_prenom} ${inscription.responsable_nom}
+                                    </h3>
+                                    <span class="px-3 py-1 rounded-full text-xs font-bold ${statusColor}">
+                                        ${getStatusLabel(inscription.statut)}
+                                    </span>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-envelope text-blue-500"></i>
+                                        <span>${inscription.email}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-phone text-green-500"></i>
+                                        <span>${inscription.telephone}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-users text-purple-500"></i>
+                                        <span>${inscription.nombre_personnes} participant(s)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-calendar text-orange-500"></i>
+                                        <span>${new Date(inscription.date_inscription).toLocaleDateString('fr-FR')}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Prix et actions -->
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-green-600 mb-2">
+                                    ${inscription.prix_total}€
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="toggleInscriptionDetails(${inscription.inscription_id})" 
+                                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all duration-200">
+                                        <i class="fas fa-eye"></i> Détails
+                                    </button>
+                                    <select onchange="updateInscriptionStatus(${inscription.inscription_id}, this.value)" 
+                                            class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="en_attente" ${inscription.statut === 'en_attente' ? 'selected' : ''}>En attente</option>
+                                        <option value="confirmee" ${inscription.statut === 'confirmee' ? 'selected' : ''}>Confirmée</option>
+                                        <option value="annulee" ${inscription.statut === 'annulee' ? 'selected' : ''}>Annulée</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Détails des participants (masqués par défaut) -->
+                        <div id="details-${inscription.inscription_id}" class="hidden mt-6 pt-6 border-t border-gray-200">
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-list mr-2 text-blue-500"></i>
+                                Liste des participants
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                ${participants.map(participant => {
+                                    const birthDate = new Date(participant.date_naissance);
+                                    const age = new Date().getFullYear() - birthDate.getFullYear();
+                                    const estAnnule = participant.annule || false;
+                                    const styleParticipant = estAnnule 
+                                        ? 'bg-gradient-to-br from-red-50 to-pink-50 border-red-200' 
+                                        : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100';
+                                    const couleurBadge = estAnnule ? 'bg-red-500' : 'bg-blue-500';
+                                    
+                                    return `
+                                        <div class="p-4 rounded-lg border ${styleParticipant} ${estAnnule ? 'opacity-75' : ''}">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-6 h-6 ${couleurBadge} text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                                        ${participant.ordre}
+                                                    </span>
+                                                    <span class="font-semibold text-gray-900 ${estAnnule ? 'line-through' : ''}">
+                                                        ${participant.prenom} ${participant.nom}
+                                                    </span>
+                                                    ${estAnnule ? `
+                                                        <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-bold rounded-full">
+                                                            ANNULÉ
+                                                        </span>
+                                                    ` : ''}
+                                                </div>
+                                                <div class="flex gap-1">
+                                                    ${!estAnnule ? `
+                                                        <button onclick="annulerParticipantAdmin(${participant.id}, '${participant.prenom} ${participant.nom}', ${inscription.inscription_id})" 
+                                                                class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
+                                                                title="Annuler ce participant">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    ` : `
+                                                        <button onclick="reactiverParticipantAdmin(${participant.id}, '${participant.prenom} ${participant.nom}', ${inscription.inscription_id})" 
+                                                                class="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
+                                                                title="Réactiver ce participant">
+                                                            <i class="fas fa-undo"></i>
+                                                        </button>
+                                                    `}
+                                                </div>
+                                            </div>
+                                            <div class="text-sm text-gray-600">
+                                                <div>Né(e) le: ${birthDate.toLocaleDateString('fr-FR')}</div>
+                                                <div class="font-medium ${estAnnule ? 'text-red-700' : 'text-blue-700'}">Âge: ${age} ans</div>
+                                                ${estAnnule && participant.motif_annulation ? `
+                                                    <div class="mt-2 text-red-700 font-medium">
+                                                        <i class="fas fa-info-circle mr-1"></i>
+                                                        Motif: ${participant.motif_annulation}
+                                                    </div>
+                                                ` : ''}
+                                                ${estAnnule && participant.date_annulation ? `
+                                                    <div class="text-red-600 text-xs">
+                                                        Annulé le: ${new Date(participant.date_annulation).toLocaleDateString('fr-FR')}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Basculer l'affichage des détails
+        function toggleInscriptionDetails(inscriptionId) {
+            const details = document.getElementById(`details-${inscriptionId}`);
+            details.classList.toggle('hidden');
+        }
+
+        // Mettre à jour le statut d'une inscription
+        async function updateInscriptionStatus(inscriptionId, newStatus) {
+            try {
+                const { error } = await supabase
+                    .from('inscriptions_weekend_vtt')
+                    .update({ statut: newStatus })
+                    .eq('id', inscriptionId);
+
+                if (error) throw error;
+
+                // Mettre à jour localement
+                const inscription = allInscriptions.find(i => i.inscription_id === inscriptionId);
+                if (inscription) {
+                    inscription.statut = newStatus;
+                    updateStatistics();
+                    applyFilters();
+                }
+
+                showNotification('Statut mis à jour avec succès', 'success');
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors de la mise à jour du statut', 'error');
+            }
+        }
+
+        // Obtenir la couleur du statut
+        function getStatusColor(status) {
+            switch (status) {
+                case 'confirmee': return 'bg-green-100 text-green-800';
+                case 'annulee': return 'bg-red-100 text-red-800';
+                default: return 'bg-yellow-100 text-yellow-800';
+            }
+        }
+
+        // Obtenir le libellé du statut
+        function getStatusLabel(status) {
+            switch (status) {
+                case 'confirmee': return 'Confirmée';
+                case 'annulee': return 'Annulée';
+                default: return 'En attente';
+            }
+        }
+
+        // Imprimer la liste des participants
+        function printParticipantsList() {
+            const printContent = document.getElementById('participants-print-content');
+            
+            let html = `
+                <div class="mb-8">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>Date d'édition:</strong> ${new Date().toLocaleDateString('fr-FR')}</div>
+                        <div><strong>Total inscriptions:</strong> ${allInscriptions.length}</div>
+                        <div><strong>Total participants:</strong> ${allInscriptions.reduce((sum, i) => sum + i.nombre_personnes, 0)}</div>
+                        <div><strong>Revenus prévus:</strong> ${allInscriptions.reduce((sum, i) => sum + i.prix_total, 0)}€</div>
+                    </div>
+                </div>
+            `;
+
+            allInscriptions.forEach((inscription, index) => {
+                const participants = inscription.participants || [];
+                html += `
+                    <div class="mb-6 border-b border-gray-300 pb-4">
+                        <h3 class="text-lg font-bold mb-2">
+                            ${index + 1}. Inscription de ${inscription.responsable_prenom} ${inscription.responsable_nom}
+                        </h3>
+                        <div class="grid grid-cols-3 gap-4 text-sm mb-3">
+                            <div><strong>Email:</strong> ${inscription.email}</div>
+                            <div><strong>Téléphone:</strong> ${inscription.telephone}</div>
+                            <div><strong>Statut:</strong> ${getStatusLabel(inscription.statut)}</div>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-semibold mb-2">Participants (${participants.length}):</h4>
+                            ${participants.map(participant => {
+                                const birthDate = new Date(participant.date_naissance);
+                                const age = new Date().getFullYear() - birthDate.getFullYear();
+                                const estAnnule = participant.annule || false;
+                                return `
+                                    <div class="ml-2 mb-1 ${estAnnule ? 'text-red-600' : ''}">
+                                        ${participant.ordre}. ${participant.prenom} ${participant.nom} 
+                                        (${birthDate.toLocaleDateString('fr-FR')} - ${age} ans)
+                                        ${estAnnule ? ` - ANNULÉ${participant.motif_annulation ? ` (${participant.motif_annulation})` : ''}` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            printContent.innerHTML = html;
+            window.print();
+        }
+
+        // Export Excel (simulation - vous pourriez intégrer une vraie librairie Excel)
+        function exportToExcel() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Responsable,Email,Téléphone,Nombre Participants,Prix Total,Statut,Participants\n";
+            
+            allInscriptions.forEach(inscription => {
+                const participants = inscription.participants || [];
+                const participantsList = participants.map(p => 
+                    `${p.prenom} ${p.nom} (${new Date(p.date_naissance).toLocaleDateString('fr-FR')})`
+                ).join('; ');
+                
+                csvContent += `"${inscription.responsable_prenom} ${inscription.responsable_nom}","${inscription.email}","${inscription.telephone}",${inscription.nombre_personnes},${inscription.prix_total},"${getStatusLabel(inscription.statut)}","${participantsList}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `inscriptions_weekend_vtt_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Fonctions utilitaires UI
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('content').classList.add('hidden');
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function showContent() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.remove('hidden');
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('content').classList.add('hidden');
+            document.getElementById('error-message').classList.remove('hidden');
+            document.getElementById('error-text').textContent = message;
+        }
+
+        function showNotification(message, type) {
+            // Simple notification (vous pourriez utiliser une librairie de notifications)
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white font-medium ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 3000);
+        }
+
+        // ================================================================
+        // GESTION DES PARTICIPANTS INDIVIDUELS - ADMIN
+        // ================================================================
+
+        // Annuler un participant depuis l'admin
+        function annulerParticipantAdmin(participantId, nomParticipant, inscriptionId) {
+            participantEnCoursAnnulationAdmin = participantId;
+            inscriptionEnCoursAdmin = inscriptionId;
+            document.getElementById('participant-a-annuler-admin').textContent = `Êtes-vous sûr de vouloir annuler la participation de ${nomParticipant} ?`;
+            document.getElementById('modal-annulation-participant-admin').classList.remove('hidden');
+            document.getElementById('motif-annulation-participant-admin').focus();
+        }
+
+        // Fermer modal d'annulation admin
+        function fermerModalAnnulationParticipantAdmin() {
+            document.getElementById('modal-annulation-participant-admin').classList.add('hidden');
+            document.getElementById('motif-annulation-participant-admin').value = '';
+            participantEnCoursAnnulationAdmin = null;
+            inscriptionEnCoursAdmin = null;
+        }
+
+        // Confirmer l'annulation d'un participant depuis l'admin
+        async function confirmerAnnulationParticipantAdmin(e) {
+            e.preventDefault();
+            
+            if (!participantEnCoursAnnulationAdmin) return;
+            
+            const motif = document.getElementById('motif-annulation-participant-admin').value.trim();
+
+            try {
+                const { error } = await supabase
+                    .from('participants_weekend_vtt')
+                    .update({
+                        annule: true,
+                        motif_annulation: motif || 'Annulé par l\'administration',
+                        date_annulation: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', participantEnCoursAnnulationAdmin);
+
+                if (error) throw error;
+
+                fermerModalAnnulationParticipantAdmin();
+                showNotification('Participant annulé avec succès', 'success');
+                
+                // Recharger les données
+                await loadInscriptions();
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors de l\'annulation du participant', 'error');
+            }
+        }
+
+        // Réactiver un participant depuis l'admin
+        function reactiverParticipantAdmin(participantId, nomParticipant, inscriptionId) {
+            participantEnCoursReactivationAdmin = participantId;
+            inscriptionEnCoursAdmin = inscriptionId;
+            document.getElementById('participant-a-reactiver-admin').textContent = `Confirmer la réactivation de ${nomParticipant} ?`;
+            document.getElementById('modal-reactivation-participant-admin').classList.remove('hidden');
+        }
+
+        // Fermer modal de réactivation admin
+        function fermerModalReactivationParticipantAdmin() {
+            document.getElementById('modal-reactivation-participant-admin').classList.add('hidden');
+            participantEnCoursReactivationAdmin = null;
+            inscriptionEnCoursAdmin = null;
+        }
+
+        // Confirmer la réactivation d'un participant depuis l'admin
+        async function confirmerReactivationParticipantAdmin() {
+            if (!participantEnCoursReactivationAdmin) return;
+
+            try {
+                const { error } = await supabase
+                    .from('participants_weekend_vtt')
+                    .update({
+                        annule: false,
+                        motif_annulation: null,
+                        date_annulation: null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', participantEnCoursReactivationAdmin);
+
+                if (error) throw error;
+
+                fermerModalReactivationParticipantAdmin();
+                showNotification('Participant réactivé avec succès', 'success');
+                
+                // Recharger les données
+                await loadInscriptions();
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showNotification('Erreur lors de la réactivation du participant', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

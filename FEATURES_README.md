@@ -112,3 +112,4 @@ Les styles des filtres sont dans le layout :
 ---
 
 **🎯 Ces fonctionnalités rendent le planning plus intuitif et permettent aux utilisateurs de personnaliser l'affichage selon leurs besoins !**
+

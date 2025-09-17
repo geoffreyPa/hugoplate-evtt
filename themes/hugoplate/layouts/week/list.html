@@ -329,6 +329,23 @@
                   <div class="grid md:grid-cols-2 gap-6">
                     {{ range .fields }}
                       <div class="{{ if eq .name "email" }}md:col-span-2{{ end }}{{ if eq .name "nombre_personnes" }}md:col-span-2{{ end }}">
+                        {{ if eq .name "nombre_personnes" }}
+                          <!-- Encadré explicatif pour le nombre de personnes -->
+                          <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                            <div class="flex items-start">
+                              <i class="fas fa-lightbulb text-amber-500 text-lg mt-1 mr-3"></i>
+                              <div class="text-amber-800">
+                                <p class="font-semibold mb-1">Comment compter le nombre de participants ?</p>
+                                <ul class="text-sm space-y-1">
+                                  <li>• <strong>Vous seul :</strong> indiquez 1</li>
+                                  <li>• <strong>Vous + votre conjoint :</strong> indiquez 2</li>
+                                  <li>• <strong>Vous + 2 enfants :</strong> indiquez 3</li>
+                                  <li>• <strong>Famille de 4 personnes :</strong> indiquez 4</li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        {{ end }}
                         <label for="{{ .name }}" class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                           {{ .label }}{{ if .required }}<span class="text-red-500 ml-1">*</span>{{ end }}
                         </label>
@@ -344,8 +361,8 @@
                             class="w-full px-4 py-4 border border-gray-300 dark:border-darkmode-border rounded-2xl focus:ring-2 focus:border-transparent dark:bg-darkmode-light dark:text-white text-lg transition-all duration-300"
                             style="&:focus { ring-color: #21A095; } &:hover { border-color: rgba(33, 160, 149, 0.5); }"
                             {{ if eq .name "nombre_personnes" }}
-                              onchange="calculateTotal()"
-                              onkeyup="calculateTotal()"
+                              onchange="handleNombrePersonnesChange()"
+                              onkeyup="handleNombrePersonnesChange()"
                             {{ end }}
                           >
                           {{ if eq .name "telephone" }}
@@ -358,6 +375,35 @@
                         </div>
                       </div>
                     {{ end }}
+                  </div>
+
+                  <!-- Section dynamique pour les participants -->
+                  <div id="participants-section" class="hidden">
+                    <div class="border-t border-gray-200 pt-8 mt-6">
+                      <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
+                        <i class="fa fa-users text-2xl mr-3" style="color: #21A095;"></i>
+                        Informations des participants
+                      </h3>
+                      <div class="bg-blue-50 border-l-4 border-blue-400 p-6 mb-8 rounded-r-lg">
+                        <div class="flex">
+                          <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-blue-400 text-xl"></i>
+                          </div>
+                          <div class="ml-3">
+                            <h4 class="text-lg font-medium text-blue-800 mb-2">Important !</h4>
+                            <div class="text-blue-700 space-y-2">
+                              <p><strong>Vous devez vous renseigner vous-même comme participant n°1</strong></p>
+                              <p>Remplissez ensuite les informations des autres participants (famille, amis, etc.)</p>
+                              <p>Tous les participants doivent avoir <strong>7 ans ou plus</strong> le jour du week-end.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div id="participants-container" class="space-y-6">
+                        <!-- Les champs pour chaque participant seront générés dynamiquement ici -->
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Calcul du prix -->
@@ -538,6 +584,58 @@
           });
         });
         
+        // Fonction de validation des données des participants
+        function validateParticipantsData(nombrePersonnes) {
+          if (nombrePersonnes <= 0) {
+            return 'Veuillez indiquer un nombre de personnes valide.';
+          }
+          
+          for (let i = 1; i <= nombrePersonnes; i++) {
+            const nom = document.getElementById(`participant_${i}_nom`);
+            const prenom = document.getElementById(`participant_${i}_prenom`);
+            const dateNaissance = document.getElementById(`participant_${i}_date_naissance`);
+            
+            const participantLabel = i === 1 ? 'votre nom (participant 1)' : `le nom du participant ${i}`;
+            const prenomLabel = i === 1 ? 'votre prénom (participant 1)' : `le prénom du participant ${i}`;
+            const dateLabel = i === 1 ? 'votre date de naissance (participant 1)' : `la date de naissance du participant ${i}`;
+            
+            if (!nom || !nom.value.trim()) {
+              return `Veuillez renseigner ${participantLabel}.`;
+            }
+            
+            if (!prenom || !prenom.value.trim()) {
+              return `Veuillez renseigner ${prenomLabel}.`;
+            }
+            
+            if (!dateNaissance || !dateNaissance.value) {
+              return `Veuillez renseigner ${dateLabel}.`;
+            }
+            
+            // Vérifier que la personne a au moins 7 ans
+            const birthDate = new Date(dateNaissance.value);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+              age--;
+            }
+            
+            if (age < 7) {
+              const personLabel = i === 1 ? 'Vous' : `Le participant ${i}`;
+              return `${personLabel} (${prenom.value} ${nom.value}) devez avoir au moins 7 ans pour participer au week-end.`;
+            }
+          }
+          
+          return null; // Aucune erreur
+        }
+
+        // Fonction pour gérer le changement du nombre de personnes
+        function handleNombrePersonnesChange() {
+          calculateTotal();
+          generateParticipantsFields();
+        }
+
         // Fonction de calcul du prix total
         function calculateTotal() {
           const nombrePersonnes = parseInt(document.getElementById('nombre_personnes').value) || 1;
@@ -546,6 +644,97 @@
           // Mise à jour de l'affichage
           document.getElementById('price-calculation').textContent = total + '€';
           document.getElementById('person-count').textContent = nombrePersonnes + (nombrePersonnes > 1 ? ' personnes' : ' personne');
+        }
+
+        // Fonction pour générer les champs des participants
+        function generateParticipantsFields() {
+          const nombrePersonnes = parseInt(document.getElementById('nombre_personnes').value) || 0;
+          const participantsSection = document.getElementById('participants-section');
+          const participantsContainer = document.getElementById('participants-container');
+          
+          if (nombrePersonnes <= 0) {
+            participantsSection.classList.add('hidden');
+            return;
+          }
+          
+          // Afficher la section
+          participantsSection.classList.remove('hidden');
+          
+          // Vider le conteneur existant
+          participantsContainer.innerHTML = '';
+          
+          // Générer les champs pour chaque participant
+          for (let i = 1; i <= nombrePersonnes; i++) {
+            const participantDiv = document.createElement('div');
+            const isFirstParticipant = i === 1;
+            participantDiv.className = isFirstParticipant 
+              ? 'bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border-2 border-green-200' 
+              : 'bg-gradient-to-br from-gray-50 to-blue-50 p-6 rounded-2xl border border-blue-100';
+            
+            const participantTitle = isFirstParticipant 
+              ? 'Vous (responsable de l\'inscription)'
+              : `Participant ${i}`;
+              
+            const participantColor = isFirstParticipant 
+              ? 'from-green-500 to-emerald-500'
+              : 'from-blue-500 to-indigo-500';
+            
+            participantDiv.innerHTML = `
+              <div class="mb-4">
+                <h4 class="text-lg font-bold text-gray-800 flex items-center">
+                  <span class="w-8 h-8 bg-gradient-to-r ${participantColor} text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">${i}</span>
+                  ${participantTitle}
+                  ${isFirstParticipant ? '<span class="ml-2 text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">Obligatoire</span>' : ''}
+                </h4>
+              </div>
+              
+              <div class="grid md:grid-cols-3 gap-4">
+                <div>
+                  <label for="participant_${i}_nom" class="block text-sm font-bold text-gray-700 mb-2">
+                    Nom <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="participant_${i}_nom"
+                    name="participant_${i}_nom"
+                    required
+                    placeholder="Nom de famille"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base transition-all duration-300"
+                  >
+                </div>
+                
+                <div>
+                  <label for="participant_${i}_prenom" class="block text-sm font-bold text-gray-700 mb-2">
+                    Prénom <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="participant_${i}_prenom"
+                    name="participant_${i}_prenom"
+                    required
+                    placeholder="Prénom"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base transition-all duration-300"
+                  >
+                </div>
+                
+                <div>
+                  <label for="participant_${i}_date_naissance" class="block text-sm font-bold text-gray-700 mb-2">
+                    Date de naissance <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="participant_${i}_date_naissance"
+                    name="participant_${i}_date_naissance"
+                    required
+                    max="${new Date().toISOString().split('T')[0]}"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base transition-all duration-300"
+                  >
+                </div>
+              </div>
+            `;
+            
+            participantsContainer.appendChild(participantDiv);
+          }
         }
         
         // Initialisation au chargement de la page
@@ -566,10 +755,16 @@
             submitButton.disabled = true;
             buttonText.textContent = '{{ .submit_button.processing_label }}';
             
-            // Récupérer les données du formulaire
+            // Valider que tous les champs participants sont remplis
+            const nombrePersonnes = parseInt(document.getElementById('nombre_personnes').value);
+            const validationError = validateParticipantsData(nombrePersonnes);
+            if (validationError) {
+              throw new Error(validationError);
+            }
+            
+            // Récupérer les données du formulaire principal
             const formData = new FormData(form);
-            const nombrePersonnes = parseInt(formData.get('nombre_personnes'));
-            const data = {
+            const inscriptionData = {
               nom: formData.get('nom'),
               prenom: formData.get('prenom'),
               email: formData.get('email'),
@@ -581,14 +776,51 @@
               statut: 'en_attente'
             };
             
-            try {
-              // Envoi des données à Supabase
-              const { data: result, error } = await supabase
-                .from('inscriptions_weekend_vtt')
-                .insert([data]);
+            // Collecter les données des participants
+            const participantsData = [];
+            for (let i = 1; i <= nombrePersonnes; i++) {
+              const nom = document.getElementById(`participant_${i}_nom`).value;
+              const prenom = document.getElementById(`participant_${i}_prenom`).value;
+              const dateNaissance = document.getElementById(`participant_${i}_date_naissance`).value;
               
-              if (error) {
-                throw error;
+              participantsData.push({
+                nom: nom,
+                prenom: prenom,
+                date_naissance: dateNaissance,
+                ordre_participant: i
+              });
+            }
+            
+            try {
+              // Étape 1: Insérer l'inscription principale
+              const { data: inscriptionResult, error: inscriptionError } = await supabase
+                .from('inscriptions_weekend_vtt')
+                .insert([inscriptionData])
+                .select();
+              
+              if (inscriptionError) {
+                throw inscriptionError;
+              }
+              
+              const inscriptionId = inscriptionResult[0].id;
+              
+              // Étape 2: Insérer les participants en lot
+              const participantsWithInscriptionId = participantsData.map(participant => ({
+                ...participant,
+                inscription_id: inscriptionId
+              }));
+              
+              const { error: participantsError } = await supabase
+                .from('participants_weekend_vtt')
+                .insert(participantsWithInscriptionId);
+              
+              if (participantsError) {
+                // Si l'insertion des participants échoue, supprimer l'inscription
+                await supabase
+                  .from('inscriptions_weekend_vtt')
+                  .delete()
+                  .eq('id', inscriptionId);
+                throw participantsError;
               }
               
               // Afficher le message de succès

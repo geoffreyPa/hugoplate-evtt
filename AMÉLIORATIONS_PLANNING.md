@@ -173,3 +173,4 @@ Pour tester les nouvelles fonctionnalités :
 ---
 
 **🎯 Ces améliorations transforment le planning en un outil puissant et intuitif pour tous les utilisateurs de l'école VTT !**
+
