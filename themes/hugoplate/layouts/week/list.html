@@ -568,48 +568,61 @@
         const pricePerPerson = {{ .price_per_person }};
         const webhookUrl = 'https://automate.naturavelo.net/webhook/inscri-week-evtt';
         
-        // Fonction pour envoyer les données au webhook
-        async function sendToWebhook(inscriptionData, participantsData, inscriptionId) {
-          try {
-            // Préparer les paramètres pour l'URL
-            const params = new URLSearchParams();
-            
-            // Données principales de l'inscription
-            params.append('inscription_id', inscriptionId);
-            params.append('nom', inscriptionData.nom);
-            params.append('prenom', inscriptionData.prenom);
-            params.append('email', inscriptionData.email);
-            params.append('telephone', inscriptionData.telephone);
-            params.append('nombre_personnes', inscriptionData.nombre_personnes);
-            params.append('prix_total', inscriptionData.prix_total);
-            params.append('evenement', inscriptionData.evenement);
-            params.append('date_inscription', inscriptionData.date_inscription);
-            params.append('statut', inscriptionData.statut);
-            
-            // Ajouter les participants (format JSON stringifié)
-            params.append('participants', JSON.stringify(participantsData));
-            
-            // Construire l'URL complète
-            const fullUrl = `${webhookUrl}?${params.toString()}`;
-            
-            // Envoyer la requête GET
-            const response = await fetch(fullUrl, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
+        // Fonction pour envoyer les données au webhook (vraiment non-bloquant)
+        function sendToWebhook(inscriptionData, participantsData, inscriptionId) {
+          // Exécuter de manière asynchrone sans bloquer le reste
+          setTimeout(async () => {
+            try {
+              console.log('🔄 Tentative d\'envoi vers webhook...');
+              
+              // Préparer les paramètres pour l'URL
+              const params = new URLSearchParams();
+              
+              // Données principales de l'inscription
+              params.append('inscription_id', inscriptionId);
+              params.append('nom', inscriptionData.nom);
+              params.append('prenom', inscriptionData.prenom);
+              params.append('email', inscriptionData.email);
+              params.append('telephone', inscriptionData.telephone);
+              params.append('nombre_personnes', inscriptionData.nombre_personnes);
+              params.append('prix_total', inscriptionData.prix_total);
+              params.append('evenement', inscriptionData.evenement);
+              params.append('date_inscription', inscriptionData.date_inscription);
+              params.append('statut', inscriptionData.statut);
+              
+              // Ajouter les participants (format JSON stringifié)
+              params.append('participants', JSON.stringify(participantsData));
+              
+              // Construire l'URL complète
+              const fullUrl = `${webhookUrl}?${params.toString()}`;
+              console.log('📡 URL webhook:', fullUrl.substring(0, 100) + '...');
+              
+              // Créer une promesse avec timeout
+              const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Timeout webhook')), 8000); // 8 secondes max
+              });
+              
+              const fetchPromise = fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                }
+              });
+              
+              // Course entre fetch et timeout
+              const response = await Promise.race([fetchPromise, timeoutPromise]);
+              
+              if (!response.ok) {
+                console.warn('⚠️ Webhook response not OK:', response.status, response.statusText);
+              } else {
+                console.log('✅ Webhook envoyé avec succès');
               }
-            });
-            
-            if (!response.ok) {
-              console.warn('Webhook response not OK:', response.status, response.statusText);
-            } else {
-              console.log('Webhook envoyé avec succès');
+              
+            } catch (error) {
+              // Ne pas faire échouer l'inscription si le webhook échoue
+              console.warn('❌ Erreur lors de l\'envoi vers le webhook (non-bloquant):', error.message);
             }
-            
-          } catch (error) {
-            // Ne pas faire échouer l'inscription si le webhook échoue
-            console.warn('Erreur lors de l\'envoi vers le webhook (non-bloquant):', error);
-          }
+          }, 100); // Délai minimal pour ne pas bloquer l'interface
         }
         
         // Scroll fluide pour les liens d'ancrage
@@ -795,17 +808,23 @@
           
           form.addEventListener('submit', async function(e) {
             e.preventDefault();
+            console.log('🚀 Début de la soumission du formulaire');
             
             // Désactiver le bouton pendant l'envoi
             submitButton.disabled = true;
             buttonText.textContent = '{{ .submit_button.processing_label }}';
+            console.log('🔒 Bouton désactivé, traitement en cours...');
             
             // Valider que tous les champs participants sont remplis
             const nombrePersonnes = parseInt(document.getElementById('nombre_personnes').value);
+            console.log('👥 Nombre de personnes:', nombrePersonnes);
+            
             const validationError = validateParticipantsData(nombrePersonnes);
             if (validationError) {
+              console.error('❌ Erreur de validation:', validationError);
               throw new Error(validationError);
             }
+            console.log('✅ Validation réussie');
             
             // Récupérer les données du formulaire principal
             const formData = new FormData(form);
@@ -836,20 +855,34 @@
               });
             }
             
-            try {
+            // Timeout général pour tout le processus d'inscription
+            const inscriptionTimeout = new Promise((_, reject) => {
+              setTimeout(() => {
+                console.error('⏰ Timeout: Processus d\'inscription trop long');
+                reject(new Error('Le processus d\'inscription prend trop de temps. Veuillez réessayer.'));
+              }, 30000); // 30 secondes max pour tout le processus
+            });
+            
+            const processusInscription = async () => {
+              console.log('💾 Début de l\'insertion dans Supabase...');
+              
               // Étape 1: Insérer l'inscription principale
+              console.log('📝 Insertion de l\'inscription principale...');
               const { data: inscriptionResult, error: inscriptionError } = await supabase
                 .from('inscriptions_weekend_vtt')
                 .insert([inscriptionData])
                 .select();
               
               if (inscriptionError) {
+                console.error('❌ Erreur inscription principale:', inscriptionError);
                 throw inscriptionError;
               }
               
               const inscriptionId = inscriptionResult[0].id;
+              console.log('✅ Inscription créée avec ID:', inscriptionId);
               
               // Étape 2: Insérer les participants en lot
+              console.log('👥 Insertion des participants...');
               const participantsWithInscriptionId = participantsData.map(participant => ({
                 ...participant,
                 inscription_id: inscriptionId
@@ -860,7 +893,9 @@
                 .insert(participantsWithInscriptionId);
               
               if (participantsError) {
+                console.error('❌ Erreur participants:', participantsError);
                 // Si l'insertion des participants échoue, supprimer l'inscription
+                console.log('🗑️ Suppression de l\'inscription suite à l\'erreur...');
                 await supabase
                   .from('inscriptions_weekend_vtt')
                   .delete()
@@ -868,8 +903,13 @@
                 throw participantsError;
               }
               
-              // Envoyer les données au webhook (non-bloquant)
-              await sendToWebhook(inscriptionData, participantsData, inscriptionId);
+              console.log('✅ Participants insérés avec succès');
+              
+              // Envoyer les données au webhook (vraiment non-bloquant)
+              console.log('📡 Envoi vers webhook...');
+              sendToWebhook(inscriptionData, participantsData, inscriptionId);
+              
+              console.log('🎉 Affichage du message de succès...');
               
               // Afficher le message de succès
               formMessage.className = 'mt-6 p-4 rounded-2xl text-center font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -883,6 +923,8 @@
               `;
               formMessage.classList.remove('hidden');
               
+              console.log('🔄 Réinitialisation du formulaire...');
+              
               // Réinitialiser le formulaire
               form.reset();
               calculateTotal();
@@ -890,8 +932,27 @@
               // Faire défiler vers le message de succès
               formMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
               
+              console.log('✅ Processus d\'inscription complètement terminé');
+            };
+            
+            try {
+              // Course entre le processus d'inscription et le timeout
+              await Promise.race([processusInscription(), inscriptionTimeout]);
+              
             } catch (error) {
-              console.error('Erreur lors de l\'inscription:', error);
+              console.error('❌ Erreur lors de l\'inscription:', error);
+              
+              // Déterminer le type d'erreur pour un message plus précis
+              let errorMessage = 'Une erreur s\'est produite. Veuillez réessayer ou nous contacter directement.';
+              let errorCode = error.code || 'UNKNOWN';
+              
+              if (error.message && error.message.includes('timeout')) {
+                errorMessage = 'La connexion prend trop de temps. Vérifiez votre connexion internet et réessayez.';
+                errorCode = 'TIMEOUT';
+              } else if (error.message && error.message.includes('Failed to fetch')) {
+                errorMessage = 'Problème de connexion. Vérifiez votre connexion internet et réessayez.';
+                errorCode = 'NETWORK';
+              }
               
               // Afficher le message d'erreur
               formMessage.className = 'mt-6 p-4 rounded-2xl text-center font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
@@ -900,11 +961,13 @@
                   <i class="fa fa-exclamation-triangle text-2xl mr-3"></i>
                   <strong>Erreur lors de l'inscription</strong>
                 </div>
-                <p>Une erreur s'est produite. Veuillez réessayer ou nous contacter directement.</p>
-                <p class="mt-2 text-sm opacity-75">Code d'erreur: ${error.code || 'UNKNOWN'}</p>
+                <p>${errorMessage}</p>
+                <p class="mt-2 text-sm opacity-75">Code d'erreur: ${errorCode}</p>
+                <p class="mt-2 text-sm">Si le problème persiste, contactez-nous au: geoffrey@naturavelo.com</p>
               `;
               formMessage.classList.remove('hidden');
             } finally {
+              console.log('🔓 Réactivation du bouton de soumission');
               // Réactiver le bouton
               submitButton.disabled = false;
               buttonText.textContent = '{{ .submit_button.label }}';
