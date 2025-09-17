@@ -323,8 +323,44 @@
                 <div class="w-32 h-1.5 mx-auto rounded-full mt-8" style="background: #21A095;"></div>
               </div>
 
-              <!-- Formulaire -->
-              <div class="bg-white dark:bg-darkmode-dark rounded-3xl shadow-2xl p-8 lg:p-12 border border-gray-100">
+              <!-- Message pour mobile/tablette -->
+              <div id="mobile-message" class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-darkmode-light dark:to-darkmode-light rounded-3xl shadow-2xl p-8 lg:p-12 border border-blue-200 hidden">
+                <div class="text-center">
+                  <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-6 shadow-lg" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                    <i class="fa fa-desktop text-white text-3xl"></i>
+                  </div>
+                  <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Inscription disponible sur ordinateur uniquement</h3>
+                  <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                    Pour des raisons de compatibilité, l'inscription au week-end VTT n'est disponible que sur ordinateur.
+                  </p>
+                  <div class="bg-white dark:bg-darkmode-dark rounded-2xl p-6 border border-gray-200">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Comment s'inscrire :</h4>
+                    <div class="space-y-3 text-left">
+                      <div class="flex items-start">
+                        <span class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0">1</span>
+                        <p class="text-gray-700 dark:text-gray-300">Ouvrez ce site sur votre ordinateur</p>
+                      </div>
+                      <div class="flex items-start">
+                        <span class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0">2</span>
+                        <p class="text-gray-700 dark:text-gray-300">Remplissez le formulaire d'inscription</p>
+                      </div>
+                      <div class="flex items-start">
+                        <span class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5 flex-shrink-0">3</span>
+                        <p class="text-gray-700 dark:text-gray-300">Confirmez votre inscription par email</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <p class="text-amber-800 font-medium mb-2">💡 Besoin d'aide ?</p>
+                    <p class="text-amber-700 text-sm">
+                      Contactez-nous au <strong>06 82 15 98 74</strong> ou par email à <strong>geoffrey@naturavelo.com</strong>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Formulaire (PC uniquement) -->
+              <div id="desktop-form" class="bg-white dark:bg-darkmode-dark rounded-3xl shadow-2xl p-8 lg:p-12 border border-gray-100">
                 <form id="inscription-form" class="space-y-6">
                   <div class="grid md:grid-cols-2 gap-6">
                     {{ range .fields }}
@@ -831,8 +867,40 @@
           return { slowConnection: false, multiplier: 1, isMobile: isMobile || isTablet };
         }
 
+        // Fonction pour détecter si c'est un appareil mobile/tablette
+        function isMobileOrTablet() {
+          const isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          const isTablet = /iPad|Android/i.test(navigator.userAgent) && !/Mobile/i.test(navigator.userAgent);
+          const isSmallScreen = window.innerWidth < 1024; // Moins de 1024px = mobile/tablette
+          
+          return isMobile || isTablet || isSmallScreen;
+        }
+
         // Initialisation au chargement de la page
         document.addEventListener('DOMContentLoaded', function() {
+          // Détecter l'appareil et afficher le bon contenu
+          const isMobileDevice = isMobileOrTablet();
+          console.log('📱 Détection d\'appareil:', {
+            isMobile: isMobileDevice,
+            userAgent: navigator.userAgent,
+            screenWidth: window.innerWidth
+          });
+          
+          if (isMobileDevice) {
+            // Afficher le message mobile et masquer le formulaire
+            const mobileMessage = document.getElementById('mobile-message');
+            const desktopForm = document.getElementById('desktop-form');
+            
+            if (mobileMessage) mobileMessage.classList.remove('hidden');
+            if (desktopForm) desktopForm.classList.add('hidden');
+            
+            console.log('📱 Mode mobile activé - Formulaire désactivé');
+            return; // Arrêter ici pour les appareils mobiles
+          }
+          
+          // Mode desktop - continuer avec le formulaire normal
+          console.log('💻 Mode desktop activé - Formulaire disponible');
+          
           // Calcul initial
           calculateTotal();
           
@@ -858,6 +926,7 @@
             // Système de heartbeat pour éviter le blocage sur mobile
             let heartbeatInterval;
             let progressCounter = 0;
+            let heartbeatCount = 0;
             const progressMessages = [
               '{{ .submit_button.processing_label }}',
               'Connexion en cours...',
@@ -866,13 +935,35 @@
               'Finalisation...'
             ];
             
-            if (connectivity.isMobile) {
-              heartbeatInterval = setInterval(() => {
-                progressCounter = (progressCounter + 1) % progressMessages.length;
-                buttonText.textContent = progressMessages[progressCounter];
-                console.log(`💓 Heartbeat mobile: ${progressMessages[progressCounter]}`);
-              }, 3000); // Changement de message toutes les 3 secondes
-            }
+            // Heartbeat pour tous les appareils (pas seulement mobile)
+            heartbeatInterval = setInterval(() => {
+              progressCounter = (progressCounter + 1) % progressMessages.length;
+              buttonText.textContent = progressMessages[progressCounter];
+              heartbeatCount++;
+              console.log(`💓 Heartbeat ${heartbeatCount}: ${progressMessages[progressCounter]}`);
+              
+              // Timeout de sécurité après 10 cycles (30 secondes)
+              if (heartbeatCount >= 10) {
+                console.error('⚠️ Timeout de sécurité atteint, arrêt du processus');
+                clearInterval(heartbeatInterval);
+                submitButton.disabled = false;
+                buttonText.textContent = '{{ .submit_button.label }}';
+                
+                formMessage.className = 'mt-6 p-4 rounded-2xl text-center font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+                formMessage.innerHTML = `
+                  <div class="flex items-center justify-center mb-2">
+                    <i class="fa fa-exclamation-triangle text-2xl mr-3"></i>
+                    <strong>Timeout de sécurité</strong>
+                  </div>
+                  <p>Le processus a pris trop de temps. Veuillez réessayer.</p>
+                  <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    Recharger la page
+                  </button>
+                `;
+                formMessage.classList.remove('hidden');
+                return;
+              }
+            }, 3000); // Changement de message toutes les 3 secondes
             
             // Valider que tous les champs participants sont remplis
             const nombrePersonnes = parseInt(document.getElementById('nombre_personnes').value);
@@ -933,19 +1024,24 @@
               formMessage.parentNode.insertBefore(slowConnectionWarning, formMessage);
             }
             
+            // Timeout de sécurité plus court pour éviter les blocages
+            const safetyTimeout = Math.min(adjustedTimeout, 30000); // Maximum 30 secondes
+            console.log(`🛡️ Timeout de sécurité: ${safetyTimeout}ms`);
+            
             const inscriptionTimeout = new Promise((_, reject) => {
               setTimeout(() => {
                 console.error('⏰ Timeout: Processus d\'inscription trop long');
                 reject(new Error('Le processus d\'inscription prend trop de temps. Vérifiez votre connexion internet et réessayez.'));
-              }, adjustedTimeout);
+              }, safetyTimeout);
             });
             
             const processusInscription = async () => {
               console.log('💾 Début de l\'insertion dans Supabase...');
               
-              // Étape 1: Insérer l'inscription principale avec retry pour mobile
-              console.log('📝 Insertion de l\'inscription principale...');
-              let inscriptionResult, inscriptionError;
+              try {
+                // Étape 1: Insérer l'inscription principale avec retry pour mobile
+                console.log('📝 Étape 1: Insertion de l\'inscription principale...');
+                let inscriptionResult, inscriptionError;
               
               // Tentative avec retry pour les connexions mobiles instables
               const maxAttempts = connectivity.isMobile ? 5 : 3; // Plus de tentatives sur mobile
@@ -1031,10 +1127,10 @@
               }
               
               const inscriptionId = inscriptionResult[0].id;
-              console.log('✅ Inscription créée avec ID:', inscriptionId);
+              console.log('✅ Étape 1 terminée: Inscription créée avec ID:', inscriptionId);
               
               // Étape 2: Insérer les participants en lot avec retry
-              console.log('👥 Insertion des participants...');
+              console.log('👥 Étape 2: Insertion des participants...');
               const participantsWithInscriptionId = participantsData.map(participant => ({
                 ...participant,
                 inscription_id: inscriptionId
@@ -1061,7 +1157,7 @@
                   participantsError = result.error;
                   
                   if (!participantsError) {
-                    console.log('✅ Participants insérés avec succès');
+                    console.log('✅ Étape 2 terminée: Participants insérés avec succès');
                     break;
                   } else if (attempt < maxAttempts) {
                     console.warn(`⚠️ Tentative ${attempt} échouée, retry dans ${retryDelay/1000} secondes...`);
@@ -1091,11 +1187,11 @@
                 throw participantsError;
               }
               
-              // Envoyer les données au webhook (vraiment non-bloquant)
-              console.log('📡 Envoi vers webhook...');
+              // Étape 3: Envoyer les données au webhook (vraiment non-bloquant)
+              console.log('📡 Étape 3: Envoi vers webhook...');
               sendToWebhook(inscriptionData, participantsData, inscriptionId);
               
-              console.log('🎉 Affichage du message de succès...');
+              console.log('🎉 Étape 4: Affichage du message de succès...');
               
               // Afficher le message de succès
               formMessage.className = 'mt-6 p-4 rounded-2xl text-center font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -1119,11 +1215,20 @@
               formMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
               
               console.log('✅ Processus d\'inscription complètement terminé');
+              
+              } catch (processError) {
+                console.error('❌ Erreur dans le processus d\'inscription:', processError);
+                throw processError;
+              }
             };
             
             try {
+              console.log('🚀 Lancement du processus d\'inscription...');
+              
               // Course entre le processus d'inscription et le timeout
               await Promise.race([processusInscription(), inscriptionTimeout]);
+              
+              console.log('✅ Processus d\'inscription terminé avec succès');
               
             } catch (error) {
               console.error('❌ Erreur lors de l\'inscription:', error);
@@ -1187,6 +1292,9 @@
               // Réactiver le bouton
               submitButton.disabled = false;
               buttonText.textContent = '{{ .submit_button.label }}';
+              
+              // Log final pour debugging
+              console.log('🏁 Processus d\'inscription complètement terminé (succès ou échec)');
             }
           });
           
@@ -1217,20 +1325,35 @@
           }
         });
         
-        // Formatage automatique du téléphone
-        document.addEventListener('DOMContentLoaded', function() {
-          const phoneInput = document.getElementById('telephone');
-          if (phoneInput) {
-            phoneInput.addEventListener('input', function(e) {
-              let value = e.target.value.replace(/\D/g, '');
-              if (value.length >= 10) {
-                value = value.substring(0, 10);
-                value = value.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
-              }
-              e.target.value = value;
-            });
-          }
-        });
+          // Gestion du redimensionnement de fenêtre
+          window.addEventListener('resize', function() {
+            const isMobileDevice = isMobileOrTablet();
+            const mobileMessage = document.getElementById('mobile-message');
+            const desktopForm = document.getElementById('desktop-form');
+            
+            if (isMobileDevice) {
+              if (mobileMessage) mobileMessage.classList.remove('hidden');
+              if (desktopForm) desktopForm.classList.add('hidden');
+            } else {
+              if (mobileMessage) mobileMessage.classList.add('hidden');
+              if (desktopForm) desktopForm.classList.remove('hidden');
+            }
+          });
+
+          // Formatage automatique du téléphone
+          document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.getElementById('telephone');
+            if (phoneInput) {
+              phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 10) {
+                  value = value.substring(0, 10);
+                  value = value.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+                }
+                e.target.value = value;
+              });
+            }
+          });
       </script>
     {{ end }}
   {{ end }}
