@@ -800,10 +800,18 @@
         // Fonction pour détecter la connectivité mobile
         function detectMobileConnectivity() {
           const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          const isTablet = /iPad|Android/i.test(navigator.userAgent) && !/Mobile/i.test(navigator.userAgent);
           const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
           
-          if (isMobile && connection) {
-            console.log('📱 Détection mobile:', {
+          console.log('🔍 Détection d\'appareil:', {
+            userAgent: navigator.userAgent,
+            isMobile: isMobile,
+            isTablet: isTablet,
+            platform: navigator.platform
+          });
+          
+          if ((isMobile || isTablet) && connection) {
+            console.log('📱 Détection mobile/tablette:', {
               effectiveType: connection.effectiveType,
               downlink: connection.downlink,
               rtt: connection.rtt,
@@ -813,11 +821,14 @@
             // Ajuster les timeouts selon la qualité de connexion
             if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
               console.log('⚠️ Connexion lente détectée, ajustement des timeouts');
-              return { slowConnection: true, multiplier: 2 };
+              return { slowConnection: true, multiplier: 3, isMobile: true };
+            } else if (connection.effectiveType === '3g') {
+              console.log('⚠️ Connexion 3G détectée, ajustement modéré des timeouts');
+              return { slowConnection: true, multiplier: 1.5, isMobile: true };
             }
           }
           
-          return { slowConnection: false, multiplier: 1 };
+          return { slowConnection: false, multiplier: 1, isMobile: isMobile || isTablet };
         }
 
         // Initialisation au chargement de la page
@@ -843,6 +854,25 @@
             submitButton.disabled = true;
             buttonText.textContent = '{{ .submit_button.processing_label }}';
             console.log('🔒 Bouton désactivé, traitement en cours...');
+            
+            // Système de heartbeat pour éviter le blocage sur mobile
+            let heartbeatInterval;
+            let progressCounter = 0;
+            const progressMessages = [
+              '{{ .submit_button.processing_label }}',
+              'Connexion en cours...',
+              'Envoi des données...',
+              'Validation...',
+              'Finalisation...'
+            ];
+            
+            if (connectivity.isMobile) {
+              heartbeatInterval = setInterval(() => {
+                progressCounter = (progressCounter + 1) % progressMessages.length;
+                buttonText.textContent = progressMessages[progressCounter];
+                console.log(`💓 Heartbeat mobile: ${progressMessages[progressCounter]}`);
+              }, 3000); // Changement de message toutes les 3 secondes
+            }
             
             // Valider que tous les champs participants sont remplis
             const nombrePersonnes = parseInt(document.getElementById('nombre_personnes').value);
@@ -885,9 +915,23 @@
             }
             
             // Timeout général pour tout le processus d'inscription (ajusté selon la connectivité)
-            const baseTimeout = 45000; // 45 secondes de base
+            const baseTimeout = connectivity.isMobile ? 60000 : 45000; // 60s pour mobile, 45s pour PC
             const adjustedTimeout = connectivity.slowConnection ? baseTimeout * connectivity.multiplier : baseTimeout;
-            console.log(`⏰ Timeout ajusté: ${adjustedTimeout}ms (${connectivity.slowConnection ? 'connexion lente' : 'connexion normale'})`);
+            console.log(`⏰ Timeout ajusté: ${adjustedTimeout}ms (${connectivity.isMobile ? 'mobile' : 'desktop'}, ${connectivity.slowConnection ? 'connexion lente' : 'connexion normale'})`);
+            
+            // Ajouter un indicateur visuel pour les connexions lentes
+            if (connectivity.isMobile && connectivity.slowConnection) {
+              const slowConnectionWarning = document.createElement('div');
+              slowConnectionWarning.className = 'mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm';
+              slowConnectionWarning.innerHTML = `
+                <div class="flex items-center">
+                  <i class="fas fa-wifi text-yellow-600 mr-2"></i>
+                  <span class="text-yellow-800 font-medium">Connexion lente détectée</span>
+                </div>
+                <p class="text-yellow-700 mt-1">L'inscription peut prendre plus de temps. Veuillez patienter...</p>
+              `;
+              formMessage.parentNode.insertBefore(slowConnectionWarning, formMessage);
+            }
             
             const inscriptionTimeout = new Promise((_, reject) => {
               setTimeout(() => {
@@ -904,13 +948,24 @@
               let inscriptionResult, inscriptionError;
               
               // Tentative avec retry pour les connexions mobiles instables
-              for (let attempt = 1; attempt <= 3; attempt++) {
+              const maxAttempts = connectivity.isMobile ? 5 : 3; // Plus de tentatives sur mobile
+              const retryDelay = connectivity.slowConnection ? 5000 : 2000; // Délai plus long pour connexions lentes
+              
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                 try {
-                  console.log(`🔄 Tentative ${attempt}/3 pour l'inscription principale...`);
-                  const result = await supabase
+                  console.log(`🔄 Tentative ${attempt}/${maxAttempts} pour l'inscription principale...`);
+                  
+                  // Timeout individuel pour chaque tentative
+                  const attemptTimeout = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Timeout tentative inscription')), 20000);
+                  });
+                  
+                  const supabasePromise = supabase
                     .from('inscriptions_weekend_vtt')
                     .insert([inscriptionData])
                     .select();
+                  
+                  const result = await Promise.race([supabasePromise, attemptTimeout]);
                   
                   inscriptionResult = result.data;
                   inscriptionError = result.error;
@@ -918,21 +973,60 @@
                   if (!inscriptionError) {
                     console.log('✅ Inscription principale réussie');
                     break;
-                  } else if (attempt < 3) {
-                    console.warn(`⚠️ Tentative ${attempt} échouée, retry dans 2 secondes...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                  } else if (attempt < maxAttempts) {
+                    console.warn(`⚠️ Tentative ${attempt} échouée, retry dans ${retryDelay/1000} secondes...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
                   }
                 } catch (err) {
                   inscriptionError = err;
-                  if (attempt < 3) {
-                    console.warn(`⚠️ Erreur tentative ${attempt}, retry dans 2 secondes...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                  if (attempt < maxAttempts) {
+                    console.warn(`⚠️ Erreur tentative ${attempt}, retry dans ${retryDelay/1000} secondes...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
                   }
                 }
               }
               
               if (inscriptionError) {
-                console.error('❌ Erreur inscription principale après 3 tentatives:', inscriptionError);
+                console.error(`❌ Erreur inscription principale après ${maxAttempts} tentatives:`, inscriptionError);
+                
+                // Pour les connexions très lentes, proposer un fallback
+                if (connectivity.slowConnection && connectivity.isMobile) {
+                  console.log('🔄 Tentative de fallback pour connexion lente...');
+                  
+                  // Afficher un message spécial pour les connexions lentes
+                  formMessage.className = 'mt-6 p-4 rounded-2xl text-center font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+                  formMessage.innerHTML = `
+                    <div class="flex items-center justify-center mb-2">
+                      <i class="fa fa-exclamation-triangle text-2xl mr-3"></i>
+                      <strong>Connexion très lente détectée</strong>
+                    </div>
+                    <p>Votre connexion est très lente (GPRS/EDGE). L'inscription peut échouer.</p>
+                    <div class="mt-4 space-y-2">
+                      <p class="text-sm font-semibold">Solutions recommandées :</p>
+                      <ul class="text-sm text-left space-y-1">
+                        <li>• Passez en WiFi si possible</li>
+                        <li>• Déplacez-vous vers une zone avec meilleur signal</li>
+                        <li>• Réessayez plus tard</li>
+                        <li>• Contactez-nous directement : geoffrey@naturavelo.com</li>
+                      </ul>
+                    </div>
+                    <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
+                      Réessayer
+                    </button>
+                  `;
+                  formMessage.classList.remove('hidden');
+                  
+                  // Arrêter le heartbeat
+                  if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                  }
+                  
+                  // Réactiver le bouton
+                  submitButton.disabled = false;
+                  buttonText.textContent = '{{ .submit_button.label }}';
+                  return;
+                }
+                
                 throw inscriptionError;
               }
               
@@ -949,27 +1043,35 @@
               let participantsError;
               
               // Tentative avec retry pour les participants
-              for (let attempt = 1; attempt <= 3; attempt++) {
+              for (let attempt = 1; attempt <= maxAttempts; attempt++) {
                 try {
-                  console.log(`🔄 Tentative ${attempt}/3 pour les participants...`);
-                  const result = await supabase
+                  console.log(`🔄 Tentative ${attempt}/${maxAttempts} pour les participants...`);
+                  
+                  // Timeout individuel pour chaque tentative
+                  const attemptTimeout = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Timeout tentative participants')), 20000);
+                  });
+                  
+                  const supabasePromise = supabase
                     .from('participants_weekend_vtt')
                     .insert(participantsWithInscriptionId);
+                  
+                  const result = await Promise.race([supabasePromise, attemptTimeout]);
                   
                   participantsError = result.error;
                   
                   if (!participantsError) {
                     console.log('✅ Participants insérés avec succès');
                     break;
-                  } else if (attempt < 3) {
-                    console.warn(`⚠️ Tentative ${attempt} échouée, retry dans 2 secondes...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                  } else if (attempt < maxAttempts) {
+                    console.warn(`⚠️ Tentative ${attempt} échouée, retry dans ${retryDelay/1000} secondes...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
                   }
                 } catch (err) {
                   participantsError = err;
-                  if (attempt < 3) {
-                    console.warn(`⚠️ Erreur tentative ${attempt}, retry dans 2 secondes...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                  if (attempt < maxAttempts) {
+                    console.warn(`⚠️ Erreur tentative ${attempt}, retry dans ${retryDelay/1000} secondes...`);
+                    await new Promise(resolve => setTimeout(resolve, retryDelay));
                   }
                 }
               }
@@ -1075,6 +1177,13 @@
               formMessage.classList.remove('hidden');
             } finally {
               console.log('🔓 Réactivation du bouton de soumission');
+              
+              // Arrêter le heartbeat si actif
+              if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                console.log('💓 Heartbeat arrêté');
+              }
+              
               // Réactiver le bouton
               submitButton.disabled = false;
               buttonText.textContent = '{{ .submit_button.label }}';
