@@ -1,0 +1,234 @@
+{{ define "main" }}
+<!-- Page de mailing pour le week-end VTT -->
+<div class="min-h-screen bg-gray-50">
+    <!-- Header Section -->
+    <div class="bg-gradient-to-r from-green-700 to-green-600 text-white py-16">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-4xl font-bold mb-4 flex items-center justify-center">
+                <i class="fas fa-biking text-5xl mr-4"></i>
+                🚴‍♂️ Week-end VTT en Ardèche 🏕️
+            </h1>
+            <p class="text-xl text-green-100">Rendez-vous au Domaine des Blachas - Salavas</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Alert Box -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 mb-8 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            <strong>📋 Action requise :</strong> Si vous n'êtes pas dans la liste, merci de vous inscrire sur 
+                            <a href="/week" class="text-green-600 hover:text-green-800 font-bold underline">evtt.naturavelo.com/week</a><br>
+                            Si vous ne venez plus, faites-le moi savoir également !
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants Section -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <div class="flex items-center mb-6">
+                    <h2 class="text-2xl font-bold text-green-700 flex items-center">
+                        <i class="fas fa-users mr-3"></i>
+                        Liste des participants
+                    </h2>
+                    <span class="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-bold ml-4">
+                        34 inscrits
+                    </span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-green-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Nom</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Prénom</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">Date de naissance</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">BADET</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Vincent</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/03/1985</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">BADET</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Lucas</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20/05/2014</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">BADET</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Raphael</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10/08/2018</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">BOURDIN</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Stéphanie</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12/09/1982</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SCARDINA</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Sébastien</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">25/04/1980</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SCARDINA</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Adrien</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18/03/2008</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SCARDINA</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Gabriel</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">22/07/2015</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">AYEL</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">François</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">30/11/1978</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">AYEL</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Martin</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">14/06/2010</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SEVREZ</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Sara</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">05/12/1983</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">BARBIER</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Julie</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18/07/1985</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CHALANT BARBIER</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Tom</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">25/03/2016</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CHALANT BARBIER</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Loïs</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/01/2020</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">BRETECHER</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Mickaël</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20/01/1982</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">BRETECHER</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Léandre</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">08/09/2012</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">UGNON-FLEURY</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Xavier</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">14/08/1975</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">UGNON-FLEURY</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Clément</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">22/04/2008</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">JEANGUYOT</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Pierre</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10/03/1978</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">JEANGUYOT</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Louis</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/12/2011</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MARIELLE</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Camille</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">28/02/2008</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">PANZUTI</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Laura</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">29/10/1987</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SÉNÉCHAL</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Romain</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">05/11/1987</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SÉNÉCHAL</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Arthur</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20/01/2017</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SÉNÉCHAL</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Maya</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">30/05/2022</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MALLEIN</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Vincent</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">25/11/1976</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MALLEIN</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Charlie</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">28/04/2011</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MALLEIN</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Leo</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">16/10/2008</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">FOURNIER</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Pascal</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">01/01/1985</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">FOURNIER</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Mael</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">03/10/2014</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CHANTEPIE</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Eliott</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td></tr>
+                            <tr class="hover:bg-green-50"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">CHANTEPIE</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Carole</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">-</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Planning Section -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <h2 class="text-2xl font-bold text-green-700 mb-6 flex items-center">
+                    <i class="fas fa-calendar-alt mr-3"></i>
+                    📅 Planning du week-end
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- Samedi -->
+                    <div class="bg-gray-50 rounded-lg p-6 border-l-4 border-green-500">
+                        <h4 class="text-lg font-bold text-green-700 mb-4 flex items-center">
+                            <i class="fas fa-flag mr-2"></i>
+                            🏁 Samedi
+                        </h4>
+                        <div class="space-y-3 text-gray-700">
+                            <p><strong>📍 RDV :</strong> Entre 9h et 9h30 au <a href="https://maps.app.goo.gl/gvRUtcQcW8tkrhd46" class="text-green-600 hover:text-green-800 font-bold underline">Domaine des Blachas à Salavas</a></p>
+                            <p><strong>🚴‍♂️ Départ randonnées :</strong> 10h maximum</p>
+                            <p><strong>🍽️ Repas midi :</strong> Autonome (à prévoir)</p>
+                            <p><strong>🔧 Mécanique :</strong> Autonome</p>
+                            <p><strong>🏕️ Retour camping :</strong> Vers 16h30-17h</p>
+                            <p><strong>⛺ Montage campement :</strong> Installation des tentes</p>
+                            <p><strong>🎯 Temps libre :</strong> Jeux, piscine, détente...</p>
+                            <p><strong>🥂 Soirée :</strong> Apéro - Repas - Repos</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Dimanche -->
+                    <div class="bg-gray-50 rounded-lg p-6 border-l-4 border-green-500">
+                        <h4 class="text-lg font-bold text-green-700 mb-4 flex items-center">
+                            <i class="fas fa-sun mr-2"></i>
+                            🌅 Dimanche
+                        </h4>
+                        <div class="space-y-3 text-gray-700">
+                            <p><strong>☕ Matin :</strong> Réveil, petit-déjeuner, rangement</p>
+                            <p><strong>🚴‍♂️ Départ :</strong> Entre 8h30 et 9h</p>
+                            <p><strong>🌧️ Randonnée :</strong> Demi-journée (pluie prévue vers 12h, peut-être plus tard)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Météo Info -->
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-6 mb-8 rounded-lg">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-cloud-sun text-blue-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-blue-700">
+                            <strong>🌦️ Météo :</strong> En fonction de la météo, nous ajusterons la suite de la journée.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transport Section -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <h2 class="text-2xl font-bold text-green-700 mb-6 flex items-center">
+                    <i class="fas fa-car mr-3"></i>
+                    🚗 Transport et vélos
+                </h2>
+                
+                <div class="space-y-6">
+                    <div class="bg-blue-50 rounded-lg p-6">
+                        <p class="text-blue-700">
+                            <strong>🚙 Transport aller-retour :</strong> Vous devez être autonomes pour vous rendre en Ardèche<br>
+                            <strong>🤝 Covoiturage disponible :</strong> <a href="https://app.caroster.io/e/6cd53096-e96c-4f7f-b553-b5081ca6f3f4" class="text-green-600 hover:text-green-800 font-bold underline">Plateforme de covoiturage</a>
+                        </p>
+                    </div>
+                    
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-6 rounded-lg">
+                        <p class="text-yellow-700">
+                            <strong>🚲 Dépôt des vélos :</strong> Possible jusqu'à vendredi 18h, après on part !<br>
+                            En cas de problème, dites-le moi tout de suite.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matériel Section -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+                <h2 class="text-2xl font-bold text-green-700 mb-6 flex items-center">
+                    <i class="fas fa-backpack mr-3"></i>
+                    🎒 Matériel pour le week-end
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                            <div>
+                                <strong>Pour dormir :</strong> Tente, duvet, matelas, oreillers
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                            <div>
+                                <strong>Pour rouler :</strong> Vélo, sac à dos, eau, nourriture et matériel de réparation
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                            <div>
+                                <strong>Pour l'hygiène :</strong> Affaires de toilette 🧼
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                            <div>
+                                <strong>Pour la piscine :</strong> Maillot de bain (short de bain interdit !)
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                            <div>
+                                <strong>Pour l'ambiance :</strong> De la bonne humeur 😃
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-1 mr-3"></i>
+                            <div>
+                                <strong>Repas :</strong> De quoi manger samedi midi
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-100 rounded-xl p-8 text-center">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center justify-center">
+                    <i class="fas fa-question-circle mr-3"></i>
+                    ❓ Questions ?
+                </h3>
+                <p class="text-gray-600 mb-4">N'hésitez pas à me contacter ! soit par mail : geoffrey@naturavelo.com soit par téléphone : 06 85 39 11 39</p>
+                <p class="text-lg font-medium text-green-700">Bon week-end à tous ! 🚴‍♂️🏕️</p>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}
